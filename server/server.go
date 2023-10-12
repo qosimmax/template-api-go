@@ -18,6 +18,8 @@ import (
 	"template-api-go/monitoring/trace"
 	fakeapi "template-api-go/proto/fake-api"
 	"template-api-go/server/internal/handler"
+
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
 // Server holds the HTTP server, router, config and all clients.
@@ -45,7 +47,10 @@ func (s *Server) Create(ctx context.Context, config *config.Config) error {
 	//		return fmt.Errorf("pubsub client: %w", err)
 	//	}
 
-	s.GrpcServer = grpc.NewServer()
+	s.GrpcServer = grpc.NewServer(
+		//grpc.StatsHandler(otelgrpc.NewServerHandler()),
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+	)
 	s.DB = &dbClient
 	s.PubSub = &psClient
 	s.Config = config
@@ -64,13 +69,10 @@ func (s *Server) Create(ctx context.Context, config *config.Config) error {
 // It also makes sure that the server gracefully shuts down on exit.
 // Returns an error if an error occurs.
 func (s *Server) Serve(ctx context.Context) error {
-	closer, err := trace.InitGlobalTracer(s.Config)
-
+	tp, err := trace.TracerProvider("6831")
 	if err != nil {
 		return fmt.Errorf("init global tracer: %w", err)
 	}
-
-	defer closer.Close()
 
 	idleConnsClosed := make(chan struct{}) // this is used to signal that we can not exit
 	go func(ctx context.Context, httpSrv *http.Server, grpcSrv *grpc.Server) {
@@ -86,6 +88,10 @@ func (s *Server) Serve(ctx context.Context) error {
 		}
 
 		grpcSrv.GracefulStop()
+
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
 
 		close(idleConnsClosed) // call close to say we can now exit the function
 	}(ctx, s.HTTP, s.GrpcServer)

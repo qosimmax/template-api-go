@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel"
 	"template-api-go/example"
 	"time"
 )
+
+var tracer = otel.Tracer("database")
 
 func (c *Client) prepareRecordExampleDataStmt() error {
 	stmt, err := c.DB.Preparex(`
@@ -24,8 +26,8 @@ func (c *Client) prepareRecordExampleDataStmt() error {
 }
 
 func (c *Client) RecordExampleData(ctx context.Context, exampleData example.Data) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "RecordExampleData")
-	defer span.Finish()
+	ctx, span := tracer.Start(ctx, "RecordExampleData")
+	defer span.End()
 
 	cctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
@@ -58,8 +60,8 @@ func (c *Client) prepareGetExampleDataStmt() error {
 }
 
 func (c *Client) GetAllExampleData(ctx context.Context) ([]example.Data, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "GetAllExampleData")
-	defer span.Finish()
+	ctx, span := tracer.Start(ctx, "GetAllExampleData")
+	defer span.End()
 
 	cctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()

@@ -1,36 +1,64 @@
 package trace
 
 import (
-	"fmt"
-	"io"
+	"context"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
 
-	jaegercfg "github.com/uber/jaeger-client-go/config"
-	jaegerlog "github.com/uber/jaeger-client-go/log"
-	"template-api-go/config"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	"sync"
 )
 
-// InitGlobalTracer creates the global tracer object
-func InitGlobalTracer(config *config.Config) (io.Closer, error) {
-	cfg := jaegercfg.Configuration{
-		Reporter: &jaegercfg.ReporterConfig{
-			LocalAgentHostPort: fmt.Sprintf("%s:%s", config.JaegerAgentHost, config.JaegerAgentPort),
-		},
-		Sampler: &jaegercfg.SamplerConfig{
-			Type:  config.JaegerSamplerType,
-			Param: config.JaegerSamplerParam,
-		},
+var resource *sdkresource.Resource
+var initResourcesOnce sync.Once
+
+func initResource() *sdkresource.Resource {
+	initResourcesOnce.Do(func() {
+		extraResources, _ := sdkresource.New(
+			context.Background(),
+			sdkresource.WithOS(),
+			sdkresource.WithProcess(),
+			sdkresource.WithContainer(),
+			sdkresource.WithHost(),
+		)
+		resource, _ = sdkresource.Merge(
+			sdkresource.Default(),
+			extraResources,
+		)
+	})
+	return resource
+}
+
+// TracerProvider returns an OpenTelemetry TracerProvider configured to use
+// the Jaeger exporter that will send spans to the provided url. The returned
+// TracerProvider will also use a Resource configured with all the information
+// about the application.
+func TracerProvider(url string) (*tracesdk.TracerProvider, error) {
+	// Create the Jaeger exporter
+	exp, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentPort(url)))
+	if err != nil {
+		return nil, err
 	}
+	tp := tracesdk.NewTracerProvider(
+		// Always be sure to batch in production.
+		tracesdk.WithBatcher(exp),
+		tracesdk.WithResource(initResource()),
 
-	jLogger := jaegerlog.StdLogger
-
-	closer, err := cfg.InitGlobalTracer(
-		"template-api-go",
-		jaegercfg.Logger(jLogger),
+		// Record information about this application in a Resource.
+		tracesdk.WithResource(sdkresource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceName("template-api-go"),
+			attribute.String("environment", "production"),
+			attribute.Int64("ID", 1),
+		)),
 	)
 
-	if err != nil {
-		return nil, fmt.Errorf("error initializing global tracer: %w", err)
-	}
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	return closer, nil
+	return tp, nil
 }

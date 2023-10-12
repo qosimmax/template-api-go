@@ -1,11 +1,9 @@
 package pubsub
 
 import (
+	ps "cloud.google.com/go/pubsub"
 	"context"
 	"fmt"
-	"template-api-go/monitoring/trace"
-
-	ps "cloud.google.com/go/pubsub"
 
 	"template-api-go/config"
 )
@@ -26,18 +24,5 @@ func (c *Client) Init(config *config.Config) error {
 }
 
 func (c *Client) send(ctx context.Context, topicName string, data []byte) error {
-	spanCarrier := trace.InjectIntoCarrier(ctx)
-
-	topic := c.PubSubClient.Topic(topicName)
-	defer topic.Stop()
-	var results []*ps.PublishResult
-	r := topic.Publish(ctx, &ps.Message{Data: data, Attributes: spanCarrier})
-	results = append(results, r)
-	for _, r := range results {
-		_, err := r.Get(ctx)
-		if err != nil {
-			return fmt.Errorf("error publishing to pubsub: %v", err)
-		}
-	}
 	return nil
 }
