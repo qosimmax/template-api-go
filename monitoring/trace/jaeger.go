@@ -10,26 +10,21 @@ import (
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
-	"sync"
 )
 
-var resource *sdkresource.Resource
-var initResourcesOnce sync.Once
-
 func initResource() *sdkresource.Resource {
-	initResourcesOnce.Do(func() {
-		extraResources, _ := sdkresource.New(
-			context.Background(),
-			sdkresource.WithOS(),
-			sdkresource.WithProcess(),
-			sdkresource.WithContainer(),
-			sdkresource.WithHost(),
-		)
-		resource, _ = sdkresource.Merge(
-			sdkresource.Default(),
-			extraResources,
-		)
-	})
+	extraResources, _ := sdkresource.New(
+		context.Background(),
+		sdkresource.WithOS(),
+		sdkresource.WithProcess(),
+		sdkresource.WithContainer(),
+		sdkresource.WithHost(),
+	)
+	resource, _ := sdkresource.Merge(
+		sdkresource.Default(),
+		extraResources,
+	)
+
 	return resource
 }
 
@@ -53,7 +48,6 @@ func TracerProvider(url string) (*tracesdk.TracerProvider, error) {
 			semconv.SchemaURL,
 			semconv.ServiceName("template-api-go"),
 			attribute.String("environment", "production"),
-			attribute.Int64("ID", 1),
 		)),
 	)
 
