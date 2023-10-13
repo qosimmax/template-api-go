@@ -1,3 +1,5 @@
+// Package handler contains GRPC handlers.
+
 package handler
 
 import (

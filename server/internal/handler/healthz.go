@@ -1,8 +1,5 @@
-// Package handler contains HTTP handlers.
-//
-//	Routes:
-//		GET /api/v1/example
-//		GET /_healthz
+// Package handler contains GRPC handlers.
+
 package handler
 
 import (
