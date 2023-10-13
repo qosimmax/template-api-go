@@ -9,16 +9,14 @@ import (
 
 // Config contains environment variables.
 type Config struct {
+	ServiceName                string  `envconfig:"SERVICE_NAME" required:"true"`
+	Environment                string  `envconfig:"ENVIRONMENT" required:"true"`
 	Port                       string  `envconfig:"PORT" default:"8000"`
 	JaegerAgentHost            string  `envconfig:"JAEGER_AGENT_HOST" default:"localhost"`
 	JaegerAgentPort            string  `envconfig:"JAEGER_AGENT_PORT" default:"6831"`
 	JaegerSamplerType          string  `envconfig:"JAEGER_SAMPLER_TYPE" default:"const"`
 	JaegerSamplerParam         float64 `envconfig:"JAEGER_SAMPLER_PARAM" default:"1"`
 	ExampleAPIEndpoint         string  `envconfig:"EXAMPLE_API_ENDPOINT" required:"true"`
-	ExampleAPIAccessEndpoint   string  `envconfig:"EXAMPLE_API_ACCESS_ENDPOINT" required:"true"`
-	ExampleAPIClientID         string  `envconfig:"EXAMPLE_API_CLIENT_ID" required:"false"`
-	ExampleAPIClientSecret     string  `envconfig:"EXAMPLE_API_CLIENT_SECRET" required:"false"`
-	PubSubProjectName          string  `envconfig:"PUBSUB_PROJECT_NAME" required:"false"`
 	DatabasePassword           string  `envconfig:"DATABASE_PASSWORD" required:"true"`
 	DatabaseUser               string  `envconfig:"DATABASE_USER" required:"true"`
 	DatabaseURL                string  `envconfig:"DATABASE_URL" default:"127.0.0.1"`

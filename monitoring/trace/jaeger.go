@@ -6,6 +6,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
+	"template-api-go/config"
 
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -32,9 +33,9 @@ func initResource() *sdkresource.Resource {
 // the Jaeger exporter that will send spans to the provided url. The returned
 // TracerProvider will also use a Resource configured with all the information
 // about the application.
-func TracerProvider(url string) (*tracesdk.TracerProvider, error) {
+func TracerProvider(cfg *config.Config) (*tracesdk.TracerProvider, error) {
 	// Create the Jaeger exporter
-	exp, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentPort(url)))
+	exp, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentPort(cfg.JaegerAgentPort)))
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +47,8 @@ func TracerProvider(url string) (*tracesdk.TracerProvider, error) {
 		// Record information about this application in a Resource.
 		tracesdk.WithResource(sdkresource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceName("template-api-go"),
-			attribute.String("environment", "production"),
+			semconv.ServiceName(cfg.ServiceName),
+			attribute.String("environment", cfg.Environment),
 		)),
 	)
 

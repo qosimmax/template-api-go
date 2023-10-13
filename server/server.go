@@ -66,7 +66,7 @@ func (s *Server) Create(ctx context.Context, config *config.Config) error {
 // It also makes sure that the server gracefully shuts down on exit.
 // Returns an error if an error occurs.
 func (s *Server) Serve(ctx context.Context) error {
-	tp, err := trace.TracerProvider("6831")
+	tp, err := trace.TracerProvider(s.Config)
 	if err != nil {
 		return fmt.Errorf("init global tracer: %w", err)
 	}
