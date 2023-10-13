@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"template-api-go/config"
 
+	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 )
 
 // Client holds the database client and prepared statements.
@@ -28,7 +28,7 @@ func (c *Client) Init(ctx context.Context, config *config.Config) error {
 		config.DatabaseOptions,
 	)
 
-	db, err := sqlx.ConnectContext(ctx, "postgres", connString)
+	db, err := sqlx.ConnectContext(ctx, "pgx", connString)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
