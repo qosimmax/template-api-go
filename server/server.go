@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"net"
 	"net/http"
@@ -16,10 +17,6 @@ import (
 	"template-api-go/config"
 	"template-api-go/monitoring/metrics"
 	"template-api-go/monitoring/trace"
-	fakeapi "template-api-go/proto/fake-api"
-	"template-api-go/server/internal/handler"
-
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
 // Server holds the HTTP server, router, config and all clients.
@@ -104,7 +101,6 @@ func (s *Server) Serve(ctx context.Context) error {
 			log.Fatalf("failed to listen: %v", err)
 		}
 
-		fakeapi.RegisterExampleServer(grpcSrv, &handler.ExampleServer{DB: s.DB})
 		log.Printf("server listening at %v", lis.Addr())
 		if err := grpcSrv.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
