@@ -5,19 +5,19 @@ package handler
 import (
 	"context"
 	"template-api-go/example"
-	"template-api-go/proto/fake-api"
+	"template-api-go/example/pb/fakeapi"
 )
 
 type ExampleServer struct {
 	DB example.DataFetcher
-	fakeapi.UnimplementedExampleServer
+	fakeapi.UnimplementedFakeServiceServer
 }
 
-func (e ExampleServer) GetExampleRequest(ctx context.Context, request *fakeapi.ExampleRequest) (*fakeapi.ExampleResponse, error) {
+func (e ExampleServer) GetFakeRequest(ctx context.Context, request *fakeapi.FakeRequest) (*fakeapi.FakeResponse, error) {
 	_, err := e.DB.GetAllExampleData(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &fakeapi.ExampleResponse{}, nil
+	return &fakeapi.FakeResponse{}, nil
 }
