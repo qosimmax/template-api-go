@@ -15,7 +15,6 @@ import (
 	"template-api-go/client/database"
 	"template-api-go/client/pubsub"
 	"template-api-go/config"
-	"template-api-go/monitoring/metrics"
 	"template-api-go/monitoring/trace"
 )
 
@@ -32,17 +31,15 @@ type Server struct {
 // Create sets up the HTTP server, router and all clients.
 // Returns an error if an error occurs.
 func (s *Server) Create(ctx context.Context, config *config.Config) error {
-	metrics.RegisterPrometheusCollectors()
-
 	var dbClient database.Client
 	if err := dbClient.Init(ctx, config); err != nil {
 		return fmt.Errorf("database client: %w", err)
 	}
 
 	var psClient pubsub.Client
-	//	if err := psClient.Init(config); err != nil {
-	//		return fmt.Errorf("pubsub client: %w", err)
-	//	}
+	if err := psClient.Init(config); err != nil {
+		return fmt.Errorf("pubsub client: %w", err)
+	}
 
 	s.GrpcServer = grpc.NewServer(
 		//grpc.StatsHandler(otelgrpc.NewServerHandler()),
