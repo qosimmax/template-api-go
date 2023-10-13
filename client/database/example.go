@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"go.opentelemetry.io/otel"
 	"template-api-go/example"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"go.opentelemetry.io/otel"
 )
 
 var tracer = otel.Tracer("database")

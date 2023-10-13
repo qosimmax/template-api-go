@@ -3,10 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	"google.golang.org/grpc"
 	"net"
 	"os"
 	"os/signal"
@@ -15,6 +11,11 @@ import (
 	"template-api-go/client/pubsub"
 	"template-api-go/config"
 	"template-api-go/monitoring/trace"
+
+	log "github.com/sirupsen/logrus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	"google.golang.org/grpc"
 )
 
 // Server holds the HTTP server, router, config and all clients.

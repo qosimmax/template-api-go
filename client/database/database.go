@@ -4,9 +4,10 @@ package database
 import (
 	"context"
 	"fmt"
+	"template-api-go/config"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"template-api-go/config"
 )
 
 // Client holds the database client and prepared statements.

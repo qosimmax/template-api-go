@@ -2,11 +2,12 @@ package trace
 
 import (
 	"context"
+	"template-api-go/config"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
-	"template-api-go/config"
 
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"

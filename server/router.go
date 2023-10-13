@@ -1,8 +1,9 @@
 package server
 
 import (
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	fakeapi "template-api-go/example/pb/fakeapi"
+
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"template-api-go/server/internal/handler"
 )
