@@ -25,6 +25,7 @@ type Config struct {
 	DatabaseOptions            string  `envconfig:"DATABASE_OPTIONS" default:"?sslmode=disable"`
 	DatabaseMaxConnections     int     `envconfig:"DATABASE_MAX_CONNECTIONS" default:"12"`
 	DatabaseMaxIdleConnections int     `envconfig:"DATABASE_MAX_IDLE_CONNECTIONS" default:"3"`
+	NatsURL                    string  `envconfig:"NATS_URL" required:"true"`
 }
 
 // LoadConfig reads environment variables and populates Config.

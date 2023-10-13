@@ -10,7 +10,7 @@ import (
 
 // setupRoutes - the root route function.
 func (s *Server) setupRoutes() {
-	fakeapi.RegisterFakeServiceServer(s.GrpcServer, &handler.ExampleServer{DB: s.DB})
+	fakeapi.RegisterFakeServiceServer(s.GrpcServer, &handler.ExampleServer{DB: s.DB, PS: s.PubSub})
 	healthpb.RegisterHealthServer(s.GrpcServer, &handler.Health{})
 
 }

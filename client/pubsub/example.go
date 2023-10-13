@@ -13,7 +13,7 @@ func (c *Client) NotifyExampleData(ctx context.Context, exampleData example.Data
 	if err != nil {
 		return fmt.Errorf("error marshalling example data to send to pubsub: %w", err)
 	}
-	err = c.send(ctx, "whatever-topic-name", data)
+	err = c.send(ctx, "example", data)
 	if err != nil {
 		return fmt.Errorf("error sending example data message to pubsub: %w", err)
 	}
