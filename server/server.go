@@ -3,12 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,12 +19,11 @@ import (
 
 // Server holds the HTTP server, router, config and all clients.
 type Server struct {
-	Config     *config.Config
-	DB         *database.Client
-	PubSub     *pubsub.Client
-	HTTP       *http.Server
-	Router     *mux.Router
-	GrpcServer *grpc.Server
+	Config         *config.Config
+	DB             *database.Client
+	PubSub         *pubsub.Client
+	GrpcServer     *grpc.Server
+	TracerProvider *tracesdk.TracerProvider
 }
 
 // Create sets up the HTTP server, router and all clients.
@@ -41,74 +39,66 @@ func (s *Server) Create(ctx context.Context, config *config.Config) error {
 		return fmt.Errorf("pubsub client: %w", err)
 	}
 
+	s.DB = &dbClient
+	s.PubSub = &psClient
+	s.Config = config
 	s.GrpcServer = grpc.NewServer(
 		//grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 	)
-	s.DB = &dbClient
-	s.PubSub = &psClient
-	s.Config = config
-	s.Router = mux.NewRouter()
-	s.HTTP = &http.Server{
-		Addr:    fmt.Sprintf(":%s", s.Config.Port),
-		Handler: s.Router,
-	}
 
 	s.setupRoutes()
 
 	return nil
 }
 
-// Serve tells the server to start listening and serve HTTP requests.
+// Serve tells the server to start listening and serve GRPC requests.
 // It also makes sure that the server gracefully shuts down on exit.
 // Returns an error if an error occurs.
 func (s *Server) Serve(ctx context.Context) error {
-	tp, err := trace.TracerProvider(s.Config)
+	var err error
+	s.TracerProvider, err = trace.TracerProvider(s.Config)
 	if err != nil {
 		return fmt.Errorf("init global tracer: %w", err)
 	}
 
 	idleConnsClosed := make(chan struct{}) // this is used to signal that we can not exit
-	go func(ctx context.Context, httpSrv *http.Server, grpcSrv *grpc.Server) {
+	go func(ctx context.Context) {
 		stop := make(chan os.Signal, 1)
 		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 		<-stop
 
 		log.Info("Shutdown signal received")
-
-		if err := httpSrv.Shutdown(ctx); err != nil {
-			log.Error(err.Error())
-		}
-
-		grpcSrv.GracefulStop()
-
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
+		s.shutdown(ctx)
 
 		close(idleConnsClosed) // call close to say we can now exit the function
-	}(ctx, s.HTTP, s.GrpcServer)
+	}(ctx)
 
-	log.Infof("Ready at: %s", s.Config.Port)
-
-	go func(grpcSrv *grpc.Server) {
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%s", "8085"))
-		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
-		}
-
-		log.Printf("server listening at %v", lis.Addr())
-		if err := grpcSrv.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-
-	}(s.GrpcServer)
-
-	if err := s.HTTP.ListenAndServe(); err != http.ErrServerClosed {
-		return fmt.Errorf("unexpected server error: %w", err)
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", s.Config.Port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
 	}
+
+	log.Printf("Service Ready at %v", lis.Addr())
+	if err := s.GrpcServer.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
 	<-idleConnsClosed // this will block until close is called
 
 	return nil
+}
+
+func (s *Server) shutdown(ctx context.Context) {
+	s.GrpcServer.GracefulStop()
+
+	if err := s.TracerProvider.Shutdown(ctx); err != nil {
+		log.Error(err.Error())
+	}
+
+	if err := s.DB.Close(); err != nil {
+		log.Error(err.Error())
+	}
+
 }

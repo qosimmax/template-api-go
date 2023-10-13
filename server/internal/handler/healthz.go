@@ -1,16 +1,25 @@
 // Package handler contains HTTP handlers.
 //
 //	Routes:
-// 		GET /api/v1/example
-// 		GET /_healthz
+//		GET /api/v1/example
+//		GET /_healthz
 package handler
 
-import "net/http"
+import (
+	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
-// Healthz is used for our readiness and liveness probes.
-// 		GET /_healthz
-// 		Responds: 200
-func Healthz(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(http.StatusText(http.StatusOK)))
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+)
+
+// Health is used for our readiness and liveness probes.
+type Health struct{}
+
+func (h *Health) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
+	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
+}
+
+func (h *Health) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
+	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
