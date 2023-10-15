@@ -5,10 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"template-api-go/example"
+
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("pubsub")
 
 // NotifyExampleData is used to publish example data to pubsub.
 func (c *Client) NotifyExampleData(ctx context.Context, exampleData example.Data) error {
+	ctx, span := tracer.Start(ctx, "NotifyExampleData")
+	defer span.End()
+
 	data, err := json.Marshal(exampleData)
 	if err != nil {
 		return fmt.Errorf("error marshalling example data to send to pubsub: %w", err)
