@@ -3,6 +3,9 @@ package metrics
 
 import (
 	"context"
+	"template-api-go/config"
+
+	"go.opentelemetry.io/otel"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -15,18 +18,18 @@ var (
 	timeToProcessRequest api.Float64Histogram
 )
 
-// RegisterPrometheusCollectors tells prometheus to set up collectors.
-func RegisterPrometheusCollectors() {
+// MetricsProvider tells prometheus to set up collectors.
+func MetricsProvider(cfg *config.Config) (*metric.MeterProvider, error) {
 	// The exporter embeds a default OpenTelemetry Reader and
 	// implements prometheus.Collector, allowing it to be used as
 	// both a Reader and Collector.
 	exporter, err := prometheus.New()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	provider := metric.NewMeterProvider(metric.WithReader(exporter))
-	meter := provider.Meter("api-gateway")
+	meter := provider.Meter(cfg.ServiceName)
 
 	requestsReceived, _ = meter.Int64Counter("http_request_status_code",
 		api.WithDescription("Status codes returned by the API"),
@@ -38,6 +41,9 @@ func RegisterPrometheusCollectors() {
 		api.WithUnit("s"),
 	)
 
+	otel.SetMeterProvider(provider)
+
+	return provider, nil
 }
 
 // ObserveTimeToProcess records the time spent processing an operation.

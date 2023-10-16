@@ -57,10 +57,9 @@ func (s *Server) Create(ctx context.Context, config *config.Config) error {
 // It also makes sure that the server gracefully shuts down on exit.
 // Returns an error if an error occurs.
 func (s *Server) Serve(ctx context.Context) error {
-	var err error
-	s.TracerProvider, err = trace.TracerProvider(s.Config)
+	err := s.addTracingAndMetrics()
 	if err != nil {
-		return fmt.Errorf("init global tracer: %w", err)
+		return err
 	}
 
 	idleConnsClosed := make(chan struct{}) // this is used to signal that we can not exit
@@ -76,19 +75,31 @@ func (s *Server) Serve(ctx context.Context) error {
 		close(idleConnsClosed) // call close to say we can now exit the function
 	}(ctx)
 
+	log.Infof("Service Ready at %v", s.Config.Port)
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", s.Config.Port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	log.Printf("Service Ready at %v", lis.Addr())
 	if err := s.GrpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		return fmt.Errorf("failed to serve: %w", err)
 	}
 
 	<-idleConnsClosed // this will block until close is called
 
 	return nil
+}
+
+func (s *Server) addTracingAndMetrics() error {
+	var err error
+	s.TracerProvider, err = trace.TracerProvider(s.Config)
+	if err != nil {
+		return fmt.Errorf("init global tracer: %w", err)
+	}
+
+	return nil
+
 }
 
 func (s *Server) shutdown(ctx context.Context) {
