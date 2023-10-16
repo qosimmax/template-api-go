@@ -25,5 +25,7 @@ func (e ExampleServer) GetFakeRequest(ctx context.Context, request *fakeapi.Fake
 		return nil, err
 	}
 
-	return &fakeapi.FakeResponse{}, nil
+	return &fakeapi.FakeResponse{
+		Message: "Fake Data",
+	}, nil
 }
