@@ -2,9 +2,13 @@ package pubsub
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"template-api-go/example"
+	"template-api-go/example/pb/fakeapi"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/otel"
 )
@@ -16,7 +20,12 @@ func (c *Client) NotifyExampleData(ctx context.Context, exampleData example.Data
 	ctx, span := tracer.Start(ctx, "NotifyExampleData")
 	defer span.End()
 
-	data, err := json.Marshal(exampleData)
+	fakeData := &fakeapi.FakeData{
+		IsFake: exampleData.IsFake,
+		Date:   timestamppb.New(exampleData.Date),
+	}
+
+	data, err := proto.Marshal(fakeData)
 	if err != nil {
 		return fmt.Errorf("error marshalling example data to send to pubsub: %w", err)
 	}
